@@ -105,41 +105,41 @@ where
     start_index..end_index
 }
 
-macro_rules! def_pool {
-    ($name:ident<$($arg:tt),*>, $pooltype:ty) => {
-        /// A memory pool for the appropriate node type.
-        pub struct $name<$($arg,)*>(Pool<$pooltype>);
+// macro_rules! def_pool {
+//     ($name:ident<$($arg:tt),*>, $pooltype:ty) => {
+//         /// A memory pool for the appropriate node type.
+//         pub struct $name<$($arg,)*>(Pool<$pooltype>);
 
-        impl<$($arg,)*> $name<$($arg,)*> {
-            /// Create a new pool with the given size.
-            pub fn new(size: usize) -> Self {
-                Self(Pool::new(size))
-            }
+//         impl<$($arg,)*> $name<$($arg,)*> {
+//             /// Create a new pool with the given size.
+//             pub fn new(size: usize) -> Self {
+//                 Self(Pool::new(size))
+//             }
 
-            /// Fill the pool with preallocated chunks.
-            pub fn fill(&self) {
-                self.0.fill();
-            }
+//             /// Fill the pool with preallocated chunks.
+//             pub fn fill(&self) {
+//                 self.0.fill();
+//             }
 
-            ///Get the current size of the pool.
-            pub fn pool_size(&self) -> usize {
-                self.0.get_pool_size()
-            }
-        }
+//             ///Get the current size of the pool.
+//             pub fn pool_size(&self) -> usize {
+//                 self.0.get_pool_size()
+//             }
+//         }
 
-        impl<$($arg,)*> Default for $name<$($arg,)*> {
-            fn default() -> Self {
-                Self::new($crate::config::POOL_SIZE)
-            }
-        }
+//         impl<$($arg,)*> Default for $name<$($arg,)*> {
+//             fn default() -> Self {
+//                 Self::new($crate::config::POOL_SIZE)
+//             }
+//         }
 
-        impl<$($arg,)*> Clone for $name<$($arg,)*> {
-            fn clone(&self) -> Self {
-                Self(self.0.clone())
-            }
-        }
-    };
-}
+//         impl<$($arg,)*> Clone for $name<$($arg,)*> {
+//             fn clone(&self) -> Self {
+//                 Self(self.0.clone())
+//             }
+//         }
+//     };
+// }
 
 // TODO require Default and Clone impl
 pub(crate) trait PoolLike<T> {
@@ -166,19 +166,26 @@ pub(crate) trait PoolLike<T> {
     fn unwrap_or_clone(this: Self::PoolRef) -> T;
 }
 
-#[deriving(Debug, Clone)]
 pub struct Pool<T> {
     inner: refpool::Pool<T>,
 }
 
+impl<T> Clone for Pool<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
 impl<T> Default for Pool<T> {
     fn default() -> Self {
-        Self::new(crate::config::POOL_SIZE)
+        PoolLike::new(crate::config::POOL_SIZE)
     }
 }
 
 impl<T> PoolLike<T> for Pool<T> {
-    type PoolRefLike = refpool::PoolRef<T>;
+    type PoolRef = refpool::PoolRef<T>;
 
     fn new(size: usize) -> Self {
         Self {
@@ -195,22 +202,28 @@ impl<T> PoolLike<T> for Pool<T> {
     }
 
     fn default_ref(&self) -> Self::PoolRef {
-        refpool::PoolRef::default(self)
+        refpool::PoolRef::default(&self.inner)
     }
 
     fn new_ref(&self, value: T) -> Self::PoolRef {
-        refpool::PoolRef::new(self, value)
+        refpool::PoolRef::new(&self.inner, value)
     }
 
     fn ptr_eq(left: &Self::PoolRef, right: &Self::PoolRef) -> bool {
         refpool::PoolRef::ptr_eq(left, right)
     }
 
-    fn make_mut<'a>(&self, this: &'a mut Self::PoolRef) -> &'a mut T {
-        refpool::PoolRef::make_mut(self, this)
+    fn make_mut<'a>(&self, this: &'a mut Self::PoolRef) -> &'a mut T
+    where
+        T: refpool::PoolClone,
+    {
+        refpool::PoolRef::make_mut(&self.inner, this)
     }
 
-    fn unwrap_or_clone(this: Self::PoolRef) -> T {
+    fn unwrap_or_clone(this: Self::PoolRef) -> T
+    where
+        T: refpool::PoolClone,
+    {
         refpool::PoolRef::unwrap_or_clone(this)
     }
 }
