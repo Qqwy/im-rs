@@ -2171,15 +2171,15 @@ where
 // }
 
 // Proptest
-#[cfg(any(test, feature = "proptest"))]
-#[doc(hidden)]
-pub mod proptest {
-    #[deprecated(
-        since = "14.3.0",
-        note = "proptest strategies have moved to im::proptest"
-    )]
-    pub use crate::proptest::ord_map;
-}
+// #[cfg(any(test, feature = "proptest"))]
+// #[doc(hidden)]
+// pub mod proptest {
+//     #[deprecated(
+//         since = "14.3.0",
+//         note = "proptest strategies have moved to im::proptest"
+//     )]
+//     pub use crate::proptest::ord_map;
+// }
 
 // Tests
 
