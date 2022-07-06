@@ -1156,17 +1156,17 @@ impl<'a, A: Ord + Clone> From<&'a collections::BTreeSet<A>> for OrdSet<A> {
     }
 }
 
-impl<A: Hash + Eq + Ord + Clone, S: BuildHasher> From<HashSet<A, S>> for OrdSet<A> {
-    fn from(hashset: HashSet<A, S>) -> Self {
-        hashset.into_iter().collect()
-    }
-}
+// impl<A: Hash + Eq + Ord + Clone, S: BuildHasher> From<HashSet<A, S>> for OrdSet<A> {
+//     fn from(hashset: HashSet<A, S>) -> Self {
+//         hashset.into_iter().collect()
+//     }
+// }
 
-impl<'a, A: Hash + Eq + Ord + Clone, S: BuildHasher> From<&'a HashSet<A, S>> for OrdSet<A> {
-    fn from(hashset: &HashSet<A, S>) -> Self {
-        hashset.into_iter().cloned().collect()
-    }
-}
+// impl<'a, A: Hash + Eq + Ord + Clone, S: BuildHasher> From<&'a HashSet<A, S>> for OrdSet<A> {
+//     fn from(hashset: &HashSet<A, S>) -> Self {
+//         hashset.into_iter().cloned().collect()
+//     }
+// }
 
 // Proptest
 #[cfg(any(test, feature = "proptest"))]
@@ -1183,7 +1183,7 @@ pub mod proptest {
 mod test {
     use super::*;
     use crate::proptest::*;
-    use ::proptest::proptest;
+    use proptest::proptest;
 
     #[test]
     fn match_strings_with_string_slices() {

@@ -2155,19 +2155,19 @@ where
     }
 }
 
-impl<K: Ord + Hash + Eq + Clone, V: Clone, S: BuildHasher> From<HashMap<K, V, S>> for OrdMap<K, V> {
-    fn from(m: HashMap<K, V, S>) -> Self {
-        m.into_iter().collect()
-    }
-}
+// impl<K: Ord + Hash + Eq + Clone, V: Clone, S: BuildHasher> From<HashMap<K, V, S>> for OrdMap<K, V> {
+//     fn from(m: HashMap<K, V, S>) -> Self {
+//         m.into_iter().collect()
+//     }
+// }
 
-impl<'a, K: Ord + Hash + Eq + Clone, V: Clone, S: BuildHasher> From<&'a HashMap<K, V, S>>
-    for OrdMap<K, V>
-{
-    fn from(m: &'a HashMap<K, V, S>) -> Self {
-        m.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
-    }
-}
+// impl<'a, K: Ord + Hash + Eq + Clone, V: Clone, S: BuildHasher> From<&'a HashMap<K, V, S>>
+//     for OrdMap<K, V>
+// {
+//     fn from(m: &'a HashMap<K, V, S>) -> Self {
+//         m.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
+//     }
+// }
 
 // Proptest
 #[cfg(any(test, feature = "proptest"))]
@@ -2187,8 +2187,8 @@ mod test {
     use super::*;
     use crate::proptest::*;
     use crate::test::is_sorted;
-    use ::proptest::num::{i16, usize};
-    use ::proptest::{bool, collection, proptest};
+    use proptest::num::{i16, usize};
+    use proptest::{bool, collection, proptest};
 
     #[test]
     fn iterates_in_order() {

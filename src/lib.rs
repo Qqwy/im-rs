@@ -358,12 +358,7 @@ mod ord;
 pub use crate::ord::map as ordmap;
 pub use crate::ord::set as ordset;
 
-#[macro_use]
-mod hash;
-pub use crate::hash::map as hashmap;
-pub use crate::hash::set as hashset;
-
-#[macro_use]
+// #[macro_use]
 // pub mod vector;
 
 pub mod iter;
@@ -391,8 +386,6 @@ compile_error!(
     "The `pool` feature is not threadsafe but you've enabled it on a threadsafe version of `im`."
 );
 
-pub use crate::hashmap::HashMap;
-pub use crate::hashset::HashSet;
 pub use crate::ordmap::OrdMap;
 pub use crate::ordset::OrdSet;
 #[doc(inline)]
