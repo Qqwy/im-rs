@@ -9,11 +9,11 @@ use std::hash::{BuildHasher, Hash};
 use std::marker::PhantomData;
 use std::ops::Deref;
 
-use crate::hashmap::HashMap;
-use crate::hashset::HashSet;
+// use crate::hashmap::HashMap;
+// use crate::hashset::HashSet;
 use crate::ordmap::OrdMap;
-use crate::ordset::OrdSet;
-use crate::vector::Vector;
+// use crate::ordset::OrdSet;
+// use crate::vector::Vector;
 
 struct SeqVisitor<'de, S, A>
 where
@@ -122,27 +122,27 @@ where
 
 // Set
 
-impl<'de, A: Deserialize<'de> + Ord + Clone> Deserialize<'de> for OrdSet<A> {
-    fn deserialize<D>(des: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        des.deserialize_seq(SeqVisitor::new())
-    }
-}
+// impl<'de, A: Deserialize<'de> + Ord + Clone> Deserialize<'de> for OrdSet<A> {
+//     fn deserialize<D>(des: D) -> Result<Self, D::Error>
+//     where
+//         D: Deserializer<'de>,
+//     {
+//         des.deserialize_seq(SeqVisitor::new())
+//     }
+// }
 
-impl<A: Ord + Clone + Serialize> Serialize for OrdSet<A> {
-    fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = ser.serialize_seq(Some(self.len()))?;
-        for i in self.iter() {
-            s.serialize_element(i.deref())?;
-        }
-        s.end()
-    }
-}
+// impl<A: Ord + Clone + Serialize> Serialize for OrdSet<A> {
+//     fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         let mut s = ser.serialize_seq(Some(self.len()))?;
+//         for i in self.iter() {
+//             s.serialize_element(i.deref())?;
+//         }
+//         s.end()
+//     }
+// }
 
 // Map
 
@@ -172,87 +172,87 @@ impl<K: Serialize + Ord + Clone, V: Serialize + Clone> Serialize for OrdMap<K, V
 
 // HashMap
 
-impl<'de, K, V, S> Deserialize<'de> for HashMap<K, V, S>
-where
-    K: Deserialize<'de> + Hash + Eq + Clone,
-    V: Deserialize<'de> + Clone,
-    S: BuildHasher + Default,
-{
-    fn deserialize<D>(des: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        des.deserialize_map(MapVisitor::<'de, HashMap<K, V, S>, K, V>::new())
-    }
-}
+// impl<'de, K, V, S> Deserialize<'de> for HashMap<K, V, S>
+// where
+//     K: Deserialize<'de> + Hash + Eq + Clone,
+//     V: Deserialize<'de> + Clone,
+//     S: BuildHasher + Default,
+// {
+//     fn deserialize<D>(des: D) -> Result<Self, D::Error>
+//     where
+//         D: Deserializer<'de>,
+//     {
+//         des.deserialize_map(MapVisitor::<'de, HashMap<K, V, S>, K, V>::new())
+//     }
+// }
 
-impl<K, V, S> Serialize for HashMap<K, V, S>
-where
-    K: Serialize + Hash + Eq + Clone,
-    V: Serialize + Clone,
-    S: BuildHasher + Default,
-{
-    fn serialize<Ser>(&self, ser: Ser) -> Result<Ser::Ok, Ser::Error>
-    where
-        Ser: Serializer,
-    {
-        let mut s = ser.serialize_map(Some(self.len()))?;
-        for (k, v) in self.iter() {
-            s.serialize_entry(k.deref(), v.deref())?;
-        }
-        s.end()
-    }
-}
+// impl<K, V, S> Serialize for HashMap<K, V, S>
+// where
+//     K: Serialize + Hash + Eq + Clone,
+//     V: Serialize + Clone,
+//     S: BuildHasher + Default,
+// {
+//     fn serialize<Ser>(&self, ser: Ser) -> Result<Ser::Ok, Ser::Error>
+//     where
+//         Ser: Serializer,
+//     {
+//         let mut s = ser.serialize_map(Some(self.len()))?;
+//         for (k, v) in self.iter() {
+//             s.serialize_entry(k.deref(), v.deref())?;
+//         }
+//         s.end()
+//     }
+// }
 
 // HashSet
 
-impl<'de, A: Deserialize<'de> + Hash + Eq + Clone, S: BuildHasher + Default> Deserialize<'de>
-    for HashSet<A, S>
-{
-    fn deserialize<D>(des: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        des.deserialize_seq(SeqVisitor::new())
-    }
-}
+// impl<'de, A: Deserialize<'de> + Hash + Eq + Clone, S: BuildHasher + Default> Deserialize<'de>
+//     for HashSet<A, S>
+// {
+//     fn deserialize<D>(des: D) -> Result<Self, D::Error>
+//     where
+//         D: Deserializer<'de>,
+//     {
+//         des.deserialize_seq(SeqVisitor::new())
+//     }
+// }
 
-impl<A: Serialize + Hash + Eq + Clone, S: BuildHasher + Default> Serialize for HashSet<A, S> {
-    fn serialize<Ser>(&self, ser: Ser) -> Result<Ser::Ok, Ser::Error>
-    where
-        Ser: Serializer,
-    {
-        let mut s = ser.serialize_seq(Some(self.len()))?;
-        for i in self.iter() {
-            s.serialize_element(i.deref())?;
-        }
-        s.end()
-    }
-}
+// impl<A: Serialize + Hash + Eq + Clone, S: BuildHasher + Default> Serialize for HashSet<A, S> {
+//     fn serialize<Ser>(&self, ser: Ser) -> Result<Ser::Ok, Ser::Error>
+//     where
+//         Ser: Serializer,
+//     {
+//         let mut s = ser.serialize_seq(Some(self.len()))?;
+//         for i in self.iter() {
+//             s.serialize_element(i.deref())?;
+//         }
+//         s.end()
+//     }
+// }
 
-// Vector
+// // Vector
 
-impl<'de, A: Clone + Deserialize<'de>> Deserialize<'de> for Vector<A> {
-    fn deserialize<D>(des: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        des.deserialize_seq(SeqVisitor::<'de, Vector<A>, A>::new())
-    }
-}
+// impl<'de, A: Clone + Deserialize<'de>> Deserialize<'de> for Vector<A> {
+//     fn deserialize<D>(des: D) -> Result<Self, D::Error>
+//     where
+//         D: Deserializer<'de>,
+//     {
+//         des.deserialize_seq(SeqVisitor::<'de, Vector<A>, A>::new())
+//     }
+// }
 
-impl<A: Clone + Serialize> Serialize for Vector<A> {
-    fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = ser.serialize_seq(Some(self.len()))?;
-        for i in self.iter() {
-            s.serialize_element(i.deref())?;
-        }
-        s.end()
-    }
-}
+// impl<A: Clone + Serialize> Serialize for Vector<A> {
+//     fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         let mut s = ser.serialize_seq(Some(self.len()))?;
+//         for i in self.iter() {
+//             s.serialize_element(i.deref())?;
+//         }
+//         s.end()
+//     }
+// }
 
 // Tests
 
@@ -260,34 +260,34 @@ impl<A: Clone + Serialize> Serialize for Vector<A> {
 mod test {
     use super::*;
     use crate::proptest::{hash_map, hash_set, ord_map, ord_set, vector};
-    use ::proptest::num::i32;
-    use ::proptest::proptest;
+    use proptest::num::i32;
+    use proptest::proptest;
     use serde_json::{from_str, to_string};
 
     proptest! {
-        #[test]
-        fn ser_ordset(ref v in ord_set(i32::ANY, 0..100)) {
-            assert_eq!(v, &from_str::<OrdSet<i32>>(&to_string(&v).unwrap()).unwrap());
-        }
+        // #[test]
+        // fn ser_ordset(ref v in ord_set(i32::ANY, 0..100)) {
+        //     assert_eq!(v, &from_str::<OrdSet<i32>>(&to_string(&v).unwrap()).unwrap());
+        // }
 
         #[test]
         fn ser_ordmap(ref v in ord_map(i32::ANY, i32::ANY, 0..100)) {
             assert_eq!(v, &from_str::<OrdMap<i32, i32>>(&to_string(&v).unwrap()).unwrap());
         }
 
-        #[test]
-        fn ser_hashmap(ref v in hash_map(i32::ANY, i32::ANY, 0..100)) {
-            assert_eq!(v, &from_str::<HashMap<i32, i32>>(&to_string(&v).unwrap()).unwrap());
-        }
+        // #[test]
+        // fn ser_hashmap(ref v in hash_map(i32::ANY, i32::ANY, 0..100)) {
+        //     assert_eq!(v, &from_str::<HashMap<i32, i32>>(&to_string(&v).unwrap()).unwrap());
+        // }
 
-        #[test]
-        fn ser_hashset(ref v in hash_set(i32::ANY, 0..100)) {
-            assert_eq!(v, &from_str::<HashSet<i32>>(&to_string(&v).unwrap()).unwrap());
-        }
+        // #[test]
+        // fn ser_hashset(ref v in hash_set(i32::ANY, 0..100)) {
+        //     assert_eq!(v, &from_str::<HashSet<i32>>(&to_string(&v).unwrap()).unwrap());
+        // }
 
-        #[test]
-        fn ser_vector(ref v in vector(i32::ANY, 0..100)) {
-            assert_eq!(v, &from_str::<Vector<i32>>(&to_string(&v).unwrap()).unwrap());
-        }
+        // #[test]
+        // fn ser_vector(ref v in vector(i32::ANY, 0..100)) {
+        //     assert_eq!(v, &from_str::<Vector<i32>>(&to_string(&v).unwrap()).unwrap());
+        // }
     }
 }
