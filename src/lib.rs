@@ -477,7 +477,7 @@ mod lib_test {
             hashmap![1 => 1, 2 => 23, 3 => 3],
             update_in!(hashmap, 2, 23)
         );
-        let ordmap = ordmap![1 => 1, 2 => 2, 3 => 3];
+        let ordmap: crate::OrdMap<usize, usize> = ordmap![1 => 1, 2 => 2, 3 => 3];
         assert_eq!(ordmap![1 => 1, 2 => 23, 3 => 3], update_in!(ordmap, 2, 23));
 
         let vecs = vector![vector![1, 2, 3], vector![4, 5, 6], vector![7, 8, 9]];
