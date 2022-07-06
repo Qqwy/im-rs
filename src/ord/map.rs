@@ -30,7 +30,7 @@ use crate::hashmap::HashMap;
 use crate::nodes::btree::{BTreeValue, Insert, Node, Remove};
 #[cfg(has_specialisation)]
 use crate::util::linear_search_by;
-use crate::util::{Pool, PoolRef};
+use crate::util::{Pool, PoolLike, PoolRef};
 
 pub use crate::nodes::btree::{
     ConsumingIter, DiffItem as NodeDiffItem, DiffIter as NodeDiffIter, Iter as RangedIter,
@@ -148,7 +148,8 @@ impl<K: Ord + Copy, V> BTreeValue for (K, V) {
     }
 }
 
-def_pool!(OrdMapPool<K, V>, Node<(K, V)>);
+// def_pool!(OrdMapPool<K, V>, Node<(K, V)>);
+type OrdMapPool<K, V> = Pool<Node<(K, V)>>;
 
 /// An ordered map.
 ///
@@ -174,7 +175,7 @@ impl<K, V> OrdMap<K, V> {
     #[must_use]
     pub fn new() -> Self {
         let pool = OrdMapPool::default();
-        let root = PoolRef::default(&pool.0);
+        let root = PoolLike::default_ref(&pool);
         OrdMap {
             size: 0,
             pool,
@@ -186,7 +187,7 @@ impl<K, V> OrdMap<K, V> {
     #[cfg(feature = "pool")]
     #[must_use]
     pub fn with_pool(pool: &OrdMapPool<K, V>) -> Self {
-        let root = PoolRef::default(&pool.0);
+        let root = PoolLike::default_ref(&pool);
         OrdMap {
             size: 0,
             pool: pool.clone(),
@@ -211,7 +212,7 @@ impl<K, V> OrdMap<K, V> {
     #[must_use]
     pub fn unit(key: K, value: V) -> Self {
         let pool = OrdMapPool::default();
-        let root = PoolRef::new(&pool.0, Node::unit((key, value)));
+        let root = PoolLike::new_ref(&pool, Node::unit((key, value)));
         OrdMap {
             size: 1,
             pool,
@@ -251,7 +252,7 @@ impl<K, V> OrdMap<K, V> {
     ///
     /// Time: O(1)
     pub fn ptr_eq(&self, other: &Self) -> bool {
-        std::ptr::eq(self, other) || PoolRef::ptr_eq(&self.root, &other.root)
+        std::ptr::eq(self, other) || PoolLike::ptr_eq(&self.root, &other.root)
     }
 
     /// Get the size of a map.
@@ -302,7 +303,7 @@ impl<K, V> OrdMap<K, V> {
     /// ```
     pub fn clear(&mut self) {
         if !self.is_empty() {
-            self.root = PoolRef::default(&self.pool.0);
+            self.root = PoolLike::default_ref(&self.pool);
             self.size = 0;
         }
     }
@@ -646,8 +647,8 @@ where
         BK: Ord + ?Sized,
         K: Borrow<BK>,
     {
-        let root = PoolRef::make_mut(&self.pool.0, &mut self.root);
-        root.lookup_mut(&self.pool.0, key).map(|(_, v)| v)
+        let root = PoolLike::make_mut(&self.pool, &mut self.root);
+        root.lookup_mut(&self.pool, key).map(|(_, v)| v)
     }
 
     /// Get the closest smaller entry in a map to a given key
@@ -675,8 +676,8 @@ where
         BK: Ord + ?Sized,
         K: Borrow<BK>,
     {
-        let pool = &self.pool.0;
-        PoolRef::make_mut(pool, &mut self.root)
+        let pool = &self.pool;
+        PoolLike::make_mut(pool, &mut self.root)
             .lookup_prev_mut(pool, key)
             .map(|(ref k, ref mut v)| (k, v))
     }
@@ -706,8 +707,8 @@ where
         BK: Ord + ?Sized,
         K: Borrow<BK>,
     {
-        let pool = &self.pool.0;
-        PoolRef::make_mut(pool, &mut self.root)
+        let pool = &self.pool;
+        PoolLike::make_mut(pool, &mut self.root)
             .lookup_next_mut(pool, key)
             .map(|(ref k, ref mut v)| (k, v))
     }
@@ -741,16 +742,16 @@ where
     #[inline]
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         let new_root = {
-            let root = PoolRef::make_mut(&self.pool.0, &mut self.root);
-            match root.insert(&self.pool.0, (key, value)) {
+            let root = PoolLike::make_mut(&self.pool, &mut self.root);
+            match root.insert(&self.pool, (key, value)) {
                 Insert::Replaced((_, old_value)) => return Some(old_value),
                 Insert::Added => {
                     self.size += 1;
                     return None;
                 }
-                Insert::Split(left, median, right) => PoolRef::new(
-                    &self.pool.0,
-                    Node::new_from_split(&self.pool.0, left, median, right),
+                Insert::Split(left, median, right) => PoolLike::new_ref(
+                    &self.pool,
+                    Node::new_from_split(&self.pool, left, median, right),
                 ),
             }
         };
@@ -794,14 +795,14 @@ where
         K: Borrow<BK>,
     {
         let (new_root, removed_value) = {
-            let root = PoolRef::make_mut(&self.pool.0, &mut self.root);
-            match root.remove(&self.pool.0, k) {
+            let root = PoolLike::make_mut(&self.pool, &mut self.root);
+            match root.remove(&self.pool, k) {
                 Remove::NoChange => return None,
                 Remove::Removed(pair) => {
                     self.size -= 1;
                     return Some(pair);
                 }
-                Remove::Update(pair, root) => (PoolRef::new(&self.pool.0, root), Some(pair)),
+                Remove::Update(pair, root) => (PoolLike::new_ref(&self.pool, root), Some(pair)),
             }
         };
         self.size -= 1;
@@ -1702,7 +1703,7 @@ where
     V: Eq,
 {
     fn eq(&self, other: &Self) -> bool {
-        PoolRef::ptr_eq(&self.root, &other.root)
+        PoolLike::ptr_eq(&self.root, &other.root)
             || (self.len() == other.len() && self.diff(other).next().is_none())
     }
 }
@@ -1824,8 +1825,8 @@ where
     V: Clone,
 {
     fn index_mut(&mut self, key: &BK) -> &mut Self::Output {
-        let root = PoolRef::make_mut(&self.pool.0, &mut self.root);
-        match root.lookup_mut(&self.pool.0, key) {
+        let root = PoolLike::make_mut(&self.pool, &mut self.root);
+        match root.lookup_mut(&self.pool, key) {
             None => panic!("OrdMap::index: invalid key"),
             Some(&mut (_, ref mut value)) => value,
         }
