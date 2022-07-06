@@ -404,19 +404,6 @@ mod tests;
 ///
 /// If one of the keys in the path doesn't exist, the macro will panic.
 ///
-/// # Examples
-///
-/// ```
-/// # #[macro_use] extern crate im;
-/// # use std::sync::Arc;
-/// # fn main() {
-/// let vec_inside_vec = vector![vector![1, 2, 3], vector![4, 5, 6]];
-///
-/// let expected = vector![vector![1, 2, 3], vector![4, 5, 1337]];
-///
-/// assert_eq!(expected, update_in![vec_inside_vec, 1 => 2, 1337]);
-/// # }
-/// ```
 ///
 /// [Vector]: ../vector/enum.Vector.html
 /// [HashMap]: ../hashmap/struct.HashMap.html
@@ -440,17 +427,6 @@ macro_rules! update_in {
 /// the data structure described by the key sequence, or `None` if any of the keys didn't
 /// exist.
 ///
-/// # Examples
-///
-/// ```
-/// # #[macro_use] extern crate im;
-/// # use std::sync::Arc;
-/// # fn main() {
-/// let vec_inside_vec = vector![vector![1, 2, 3], vector![4, 5, 6]];
-///
-/// assert_eq!(Some(&6), get_in![vec_inside_vec, 1 => 2]);
-/// # }
-/// ```
 ///
 /// [Vector]: ../vector/enum.Vector.html
 /// [HashMap]: ../hashmap/struct.HashMap.html
