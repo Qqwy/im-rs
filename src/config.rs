@@ -8,7 +8,7 @@ use typenum::*;
 pub(crate) type VectorChunkSize = U64;
 
 /// The branching factor of B-trees
-pub(crate) type OrdChunkSize = U64; // Must be an even number!
+pub(crate) type OrdChunkSize = U128; // Must be an even number!
 
 /// The level size of HAMTs, in bits
 /// Branching factor is 2 ^ HashLevelSize.
