@@ -178,13 +178,13 @@ impl<T> Clone for Pool<T> {
     }
 }
 
-impl<T> Default for Pool<T> {
+impl<T: refpool::PoolDefaultImpl + refpool::PoolClone> Default for Pool<T> {
     fn default() -> Self {
         PoolLike::new(crate::config::POOL_SIZE)
     }
 }
 
-impl<T> PoolLike<T> for Pool<T> {
+impl<T: refpool::PoolDefaultImpl + refpool::PoolClone> PoolLike<T> for Pool<T> {
     type PoolRef = refpool::PoolRef<T>;
 
     fn new(size: usize) -> Self {
