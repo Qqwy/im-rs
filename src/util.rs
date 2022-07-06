@@ -151,7 +151,7 @@ pub trait PoolLike {
     fn new(size: usize) -> Self;
 
     /// Fill the pool with preallocated chunks?
-    fn fill(&self);
+    // fn fill(&self);
 
     /// Return the current pool size?
     fn pool_size(&self) -> usize;
@@ -189,9 +189,9 @@ impl<T> PoolLike for Pool<T> {
         }
     }
 
-    fn fill(&self) {
-        self.inner.fill();
-    }
+    // fn fill(&self) {
+    //     // self.inner.fill();
+    // }
 
     fn pool_size(&self) -> usize {
         self.inner.get_pool_size()
