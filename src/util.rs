@@ -142,7 +142,7 @@ where
 // }
 
 // TODO require Default and Clone impl
-pub(crate) trait PoolLike {
+pub trait PoolLike {
     type Value;
     type PoolRef;
 
