@@ -208,7 +208,7 @@ impl<T> PoolLike for Pool<T> {
 
 pub trait PoolLikeClone: PoolLike {
     fn make_mut<'a>(&self, this: &'a mut Self::PoolRef) -> &'a mut Self::Value;
-    fn unwrap_or_clone(this: Self::PoolRef) -> Self::Value;
+    // fn unwrap_or_clone(&self, this: Self::PoolRef) -> Self::Value; //
 }
 
 pub trait PoolLikeDefault: PoolLike {
@@ -226,9 +226,9 @@ impl<T: PoolClone> PoolLikeClone for Pool<T> {
         refpool::PoolRef::make_mut(&self.inner, this)
     }
 
-    fn unwrap_or_clone(this: Self::PoolRef) -> T {
-        refpool::PoolRef::unwrap_or_clone(this)
-    }
+    // fn unwrap_or_clone(&self, this: Self::PoolRef) -> T {
+    //     refpool::PoolRef::unwrap_or_clone(this)
+    // }
 }
 
 pub(crate) use {refpool::PoolClone, refpool::PoolDefault, refpool::PoolRef};

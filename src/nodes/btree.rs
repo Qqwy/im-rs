@@ -768,8 +768,8 @@ impl<A: BTreeValue> Node<A> {
                 let value = self.keys.remove(index);
                 let mut merged_child = Node::merge(
                     value,
-                    PoolLikeClone::unwrap_or_clone(left),
-                    PoolLikeClone::unwrap_or_clone(right),
+                    PoolRef::unwrap_or_clone(left),
+                    PoolRef::unwrap_or_clone(right),
                 );
                 let (removed, new_child) = match merged_child.remove_target(pool, target) {
                     Remove::NoChange => unreachable!(),
@@ -879,8 +879,8 @@ impl<A: BTreeValue> Node<A> {
                 let middle = self.keys.remove(index);
                 let mut merged = Node::merge(
                     middle,
-                    PoolLikeClone::unwrap_or_clone(left),
-                    PoolLikeClone::unwrap_or_clone(right),
+                    PoolRef::unwrap_or_clone(left),
+                    PoolRef::unwrap_or_clone(right),
                 );
                 let update;
                 let out_value;
@@ -1145,9 +1145,7 @@ impl<A: Clone> ConsumingIter<A> {
 
     fn push_node(stack: &mut Vec<ConsumingIterItem<A>>, maybe_node: Option<PoolRef<Node<A>>>) {
         if let Some(node) = maybe_node {
-            stack.push(ConsumingIterItem::Consider(PoolLikeClone::unwrap_or_clone(
-                node,
-            )))
+            stack.push(ConsumingIterItem::Consider(PoolRef::unwrap_or_clone(node)))
         }
     }
 
