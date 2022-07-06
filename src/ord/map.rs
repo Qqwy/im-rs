@@ -164,11 +164,13 @@ type OrdMapPool<K, V> = Pool<Node<(K, V)>>;
 ///
 /// [hashmap::HashMap]: ../hashmap/struct.HashMap.html
 /// [std::cmp::Ord]: https://doc.rust-lang.org/std/cmp/trait.Ord.html
-pub struct OrdMap<K, V> {
+pub struct GenericOrdMap<K, V, ActualPool> {
     size: usize,
-    pool: OrdMapPool<K, V>,
+    pool: ActualPool,
     root: PoolRef<Node<(K, V)>>,
 }
+
+pub type OrdMap<K, V> = GenericOrdMap<K, V, OrdMapPool<K, V>>;
 
 impl<K, V> OrdMap<K, V> {
     /// Construct an empty map.

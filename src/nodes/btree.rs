@@ -39,7 +39,7 @@ pub trait BTreeValue {
     fn cmp_values(&self, other: &Self) -> Ordering;
 }
 
-pub(crate) struct Node<A> {
+pub struct Node<A> {
     keys: Chunk<A, NodeSize>,
     children: Chunk<Option<PoolRef<Node<A>>>, Add1<NodeSize>>,
 }
