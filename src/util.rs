@@ -143,7 +143,7 @@ macro_rules! def_pool {
 
 // TODO require Default and Clone impl
 pub(crate) trait PoolLike<T> {
-    type PoolRefLike;
+    type PoolRef;
 
     /// Create a new pool with the given size.
     /// The size is advisable.
@@ -166,8 +166,15 @@ pub(crate) trait PoolLike<T> {
     fn unwrap_or_clone(this: Self::PoolRef) -> T;
 }
 
+#[deriving(Debug, Clone)]
 pub struct Pool<T> {
     inner: refpool::Pool<T>,
+}
+
+impl<T> Default for Pool<T> {
+    fn default() -> Self {
+        Self::new(crate::config::POOL_SIZE)
+    }
 }
 
 impl<T> PoolLike<T> for Pool<T> {
@@ -207,3 +214,5 @@ impl<T> PoolLike<T> for Pool<T> {
         refpool::PoolRef::unwrap_or_clone(this)
     }
 }
+
+pub(crate) use {refpool::PoolClone, refpool::PoolDefault, refpool::PoolRef};
