@@ -21,16 +21,16 @@ use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::collections;
 use std::fmt::{Debug, Error, Formatter};
-use std::hash::{BuildHasher, Hash, Hasher};
+use std::hash::{Hash, Hasher};
 use std::iter::{FromIterator, Iterator, Sum};
 use std::mem;
 use std::ops::{Add, Index, IndexMut, RangeBounds};
 
-use crate::hashmap::HashMap;
+// use crate::hashmap::HashMap;
 use crate::nodes::btree::{BTreeValue, Insert, Node, Remove};
 #[cfg(has_specialisation)]
 use crate::util::linear_search_by;
-use crate::util::{Pool, PoolLike, PoolRef};
+use crate::util::{Pool, PoolLike, PoolLikeClone, PoolLikeDefault, PoolRef};
 
 pub use crate::nodes::btree::{
     ConsumingIter, DiffItem as NodeDiffItem, DiffIter as NodeDiffIter, Iter as RangedIter,
@@ -175,7 +175,7 @@ impl<K, V> OrdMap<K, V> {
     #[must_use]
     pub fn new() -> Self {
         let pool = OrdMapPool::default();
-        let root = PoolLike::default_ref(&pool);
+        let root = PoolLikeDefault::default_ref(&pool);
         OrdMap {
             size: 0,
             pool,
@@ -187,7 +187,7 @@ impl<K, V> OrdMap<K, V> {
     #[cfg(feature = "pool")]
     #[must_use]
     pub fn with_pool(pool: &OrdMapPool<K, V>) -> Self {
-        let root = PoolLike::default_ref(&pool);
+        let root = PoolLikeDefault::default_ref(&pool);
         OrdMap {
             size: 0,
             pool: pool.clone(),
@@ -252,7 +252,7 @@ impl<K, V> OrdMap<K, V> {
     ///
     /// Time: O(1)
     pub fn ptr_eq(&self, other: &Self) -> bool {
-        std::ptr::eq(self, other) || PoolLike::ptr_eq(&self.root, &other.root)
+        std::ptr::eq(self, other) || OrdMapPool::ptr_eq(&self.root, &other.root)
     }
 
     /// Get the size of a map.
@@ -303,7 +303,7 @@ impl<K, V> OrdMap<K, V> {
     /// ```
     pub fn clear(&mut self) {
         if !self.is_empty() {
-            self.root = PoolLike::default_ref(&self.pool);
+            self.root = PoolLikeDefault::default_ref(&self.pool);
             self.size = 0;
         }
     }
@@ -647,7 +647,7 @@ where
         BK: Ord + ?Sized,
         K: Borrow<BK>,
     {
-        let root = PoolLike::make_mut(&self.pool, &mut self.root);
+        let root = PoolLikeClone::make_mut(&self.pool, &mut self.root);
         root.lookup_mut(&self.pool, key).map(|(_, v)| v)
     }
 
@@ -677,7 +677,7 @@ where
         K: Borrow<BK>,
     {
         let pool = &self.pool;
-        PoolLike::make_mut(pool, &mut self.root)
+        PoolLikeClone::make_mut(pool, &mut self.root)
             .lookup_prev_mut(pool, key)
             .map(|(ref k, ref mut v)| (k, v))
     }
@@ -708,7 +708,7 @@ where
         K: Borrow<BK>,
     {
         let pool = &self.pool;
-        PoolLike::make_mut(pool, &mut self.root)
+        PoolLikeClone::make_mut(pool, &mut self.root)
             .lookup_next_mut(pool, key)
             .map(|(ref k, ref mut v)| (k, v))
     }
@@ -742,7 +742,7 @@ where
     #[inline]
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         let new_root = {
-            let root = PoolLike::make_mut(&self.pool, &mut self.root);
+            let root = PoolLikeClone::make_mut(&self.pool, &mut self.root);
             match root.insert(&self.pool, (key, value)) {
                 Insert::Replaced((_, old_value)) => return Some(old_value),
                 Insert::Added => {
@@ -795,7 +795,7 @@ where
         K: Borrow<BK>,
     {
         let (new_root, removed_value) = {
-            let root = PoolLike::make_mut(&self.pool, &mut self.root);
+            let root = PoolLikeClone::make_mut(&self.pool, &mut self.root);
             match root.remove(&self.pool, k) {
                 Remove::NoChange => return None,
                 Remove::Removed(pair) => {
@@ -1703,7 +1703,7 @@ where
     V: Eq,
 {
     fn eq(&self, other: &Self) -> bool {
-        PoolLike::ptr_eq(&self.root, &other.root)
+        OrdMapPool::ptr_eq(&self.root, &other.root)
             || (self.len() == other.len() && self.diff(other).next().is_none())
     }
 }
@@ -1825,7 +1825,7 @@ where
     V: Clone,
 {
     fn index_mut(&mut self, key: &BK) -> &mut Self::Output {
-        let root = PoolLike::make_mut(&self.pool, &mut self.root);
+        let root = PoolLikeClone::make_mut(&self.pool, &mut self.root);
         match root.lookup_mut(&self.pool, key) {
             None => panic!("OrdMap::index: invalid key"),
             Some(&mut (_, ref mut value)) => value,

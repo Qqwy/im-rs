@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 pub(crate) mod btree;
-pub(crate) mod hamt;
+// pub(crate) mod hamt;
 // pub(crate) mod rrb;
 
 pub(crate) mod chunk {

@@ -347,7 +347,7 @@ extern crate pretty_assertions;
 
 mod config;
 mod nodes;
-mod sort;
+// mod sort;
 mod sync;
 
 #[macro_use]
@@ -387,7 +387,7 @@ compile_error!(
 );
 
 pub use crate::ordmap::OrdMap;
-pub use crate::ordset::OrdSet;
+// pub use crate::ordset::OrdSet;
 #[doc(inline)]
 // pub use crate::vector::Vector;
 #[cfg(test)]

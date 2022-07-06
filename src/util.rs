@@ -206,12 +206,12 @@ impl<T> PoolLike for Pool<T> {
     }
 }
 
-trait PoolLikeClone: PoolLike {
-    fn make_mut<'a>(&self, this: &'a mut Self::PoolRef) -> &'a mut T;
+pub trait PoolLikeClone: PoolLike {
+    fn make_mut<'a>(&self, this: &'a mut Self::PoolRef) -> &'a mut Self::Value;
     fn unwrap_or_clone(this: Self::PoolRef) -> Self::Value;
 }
 
-trait PoolLikeDefault: PoolLike {
+pub trait PoolLikeDefault: PoolLike {
     fn default_ref(&self) -> Self::PoolRef;
 }
 
