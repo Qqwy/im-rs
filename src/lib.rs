@@ -1,6 +1,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#![feature(generic_associated_types)]
 
 //! # Immutable Data Structures for Rust
 //!
@@ -363,7 +364,7 @@ pub use crate::hash::map as hashmap;
 pub use crate::hash::set as hashset;
 
 #[macro_use]
-pub mod vector;
+// pub mod vector;
 
 pub mod iter;
 
@@ -395,8 +396,7 @@ pub use crate::hashset::HashSet;
 pub use crate::ordmap::OrdMap;
 pub use crate::ordset::OrdSet;
 #[doc(inline)]
-pub use crate::vector::Vector;
-
+// pub use crate::vector::Vector;
 #[cfg(test)]
 mod test;
 

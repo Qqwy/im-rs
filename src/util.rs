@@ -14,22 +14,22 @@ pub(crate) use refpool::{PoolClone, PoolDefault};
 // The `Ref` type is an alias for either `Rc` or `Arc`, user's choice.
 
 // `Arc` without refpool
-#[cfg(all(threadsafe))]
-pub(crate) use crate::fakepool::{Arc as PoolRef, Pool, PoolClone, PoolDefault};
+// #[cfg(all(threadsafe))]
+// pub(crate) use crate::fakepool::{Arc as PoolRef, Pool, PoolClone, PoolDefault};
 
 // `Ref` == `Arc` when threadsafe
 #[cfg(threadsafe)]
 pub(crate) type Ref<A> = std::sync::Arc<A>;
 
 // `Rc` without refpool
-#[cfg(all(not(threadsafe), not(feature = "pool")))]
-pub(crate) use crate::fakepool::{Pool, PoolClone, PoolDefault, Rc as PoolRef};
+// #[cfg(all(not(threadsafe), not(feature = "pool")))]
+// pub(crate) use crate::fakepool::{Pool, PoolClone, PoolDefault, Rc as PoolRef};
 
 // `Rc` with refpool
-#[cfg(all(not(threadsafe), feature = "pool"))]
-pub(crate) type PoolRef<A> = refpool::PoolRef<A>;
-#[cfg(all(not(threadsafe), feature = "pool"))]
-pub(crate) type Pool<A> = refpool::Pool<A>;
+// #[cfg(all(not(threadsafe), feature = "pool"))]
+// pub(crate) type PoolRef<A> = refpool::PoolRef<A>;
+// #[cfg(all(not(threadsafe), feature = "pool"))]
+// pub(crate) type Pool<A> = refpool::Pool<A>;
 
 // `Ref` == `Rc` when not threadsafe
 #[cfg(not(threadsafe))]
@@ -139,4 +139,71 @@ macro_rules! def_pool {
             }
         }
     };
+}
+
+// TODO require Default and Clone impl
+pub(crate) trait PoolLike<T> {
+    type PoolRefLike;
+
+    /// Create a new pool with the given size.
+    /// The size is advisable.
+    fn new(size: usize) -> Self;
+
+    /// Fill the pool with preallocated chunks?
+    fn fill(&self);
+
+    /// Return the current pool size?
+    fn pool_size(&self) -> usize;
+
+    fn default_ref(&self) -> Self::PoolRef;
+
+    fn new_ref(&self, value: T) -> Self::PoolRef;
+
+    fn ptr_eq(left: &Self::PoolRef, right: &Self::PoolRef) -> bool;
+
+    fn make_mut<'a>(&self, this: &'a mut Self::PoolRef) -> &'a mut T;
+
+    fn unwrap_or_clone(this: Self::PoolRef) -> T;
+}
+
+pub struct Pool<T> {
+    inner: refpool::Pool<T>,
+}
+
+impl<T> PoolLike<T> for Pool<T> {
+    type PoolRefLike = refpool::PoolRef<T>;
+
+    fn new(size: usize) -> Self {
+        Self {
+            inner: refpool::Pool::new(size),
+        }
+    }
+
+    fn fill(&self) {
+        self.inner.fill();
+    }
+
+    fn pool_size(&self) -> usize {
+        self.inner.get_pool_size()
+    }
+
+    fn default_ref(&self) -> Self::PoolRef {
+        refpool::PoolRef::default(self)
+    }
+
+    fn new_ref(&self, value: T) -> Self::PoolRef {
+        refpool::PoolRef::new(self, value)
+    }
+
+    fn ptr_eq(left: &Self::PoolRef, right: &Self::PoolRef) -> bool {
+        refpool::PoolRef::ptr_eq(left, right)
+    }
+
+    fn make_mut<'a>(&self, this: &'a mut Self::PoolRef) -> &'a mut T {
+        refpool::PoolRef::make_mut(self, this)
+    }
+
+    fn unwrap_or_clone(this: Self::PoolRef) -> T {
+        refpool::PoolRef::unwrap_or_clone(this)
+    }
 }

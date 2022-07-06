@@ -4,7 +4,7 @@
 
 pub(crate) mod btree;
 pub(crate) mod hamt;
-pub(crate) mod rrb;
+// pub(crate) mod rrb;
 
 pub(crate) mod chunk {
     use crate::config::VectorChunkSize;
