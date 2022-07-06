@@ -1,6 +1,6 @@
-mod hashset;
+// mod hashset;
 mod ordset;
-mod vector;
+// mod vector;
 
 fn code_fmt(code: &str) -> String {
     // use syntect::easy::HighlightLines;

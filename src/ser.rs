@@ -259,7 +259,8 @@ impl<K: Serialize + Ord + Clone, V: Serialize + Clone> Serialize for OrdMap<K, V
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::proptest::{hash_map, hash_set, ord_map, ord_set, vector};
+    // use crate::proptest::{hash_map, hash_set, ord_map, ord_set, vector};
+    use crate::proptest::ord_map;
     use proptest::num::i32;
     use proptest::proptest;
     use serde_json::{from_str, to_string};
