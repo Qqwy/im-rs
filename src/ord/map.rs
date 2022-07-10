@@ -176,8 +176,8 @@ impl<K, V> OrdMap<K, V> {
     /// Construct an empty map.
     #[must_use]
     pub fn new() -> Self {
-        let pool = OrdMapPool::default();
-        let root = PoolLikeDefault::default_ref(&pool);
+        let mut pool = OrdMapPool::default();
+        let root = PoolLikeDefault::default_ref(&mut pool);
         OrdMap {
             size: 0,
             pool,
@@ -188,8 +188,8 @@ impl<K, V> OrdMap<K, V> {
     /// Construct an empty map using a specific memory pool.
     #[cfg(feature = "pool")]
     #[must_use]
-    pub fn with_pool(pool: &OrdMapPool<K, V>) -> Self {
-        let root = PoolLikeDefault::default_ref(&pool);
+    pub fn with_pool(pool: &mut OrdMapPool<K, V>) -> Self {
+        let root = PoolLikeDefault::default_ref(&mut pool);
         OrdMap {
             size: 0,
             pool: pool.clone(),
@@ -305,7 +305,7 @@ impl<K, V> OrdMap<K, V> {
     /// ```
     pub fn clear(&mut self) {
         if !self.is_empty() {
-            self.root = PoolLikeDefault::default_ref(&self.pool);
+            self.root = PoolLikeDefault::default_ref(&mut self.pool);
             self.size = 0;
         }
     }

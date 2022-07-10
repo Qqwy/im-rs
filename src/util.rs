@@ -167,7 +167,7 @@ pub(crate) trait PoolLikeClone: PoolLike {
 }
 
 pub(crate) trait PoolLikeDefault: PoolLike {
-    fn default_ref(&self) -> Self::PoolRef;
+    fn default_ref(&mut self) -> Self::PoolRef;
 }
 
 use std::collections::HashMap;
@@ -218,6 +218,24 @@ impl<T> PoolLike for FilePool<T> {
         left == right
     }
 }
+
+impl<T: Default> PoolLikeDefault for FilePool<T> {
+    fn default_ref(&mut self) -> Self::PoolRef {
+        let val = Default::default();
+        self.new_ref(val)
+    }
+}
+
+impl<T: PoolClone> PoolLikeClone for FilePool<T> {
+    fn make_mut<'a>(&mut self, this: &'a mut Self::PoolRef) -> &'a mut T {
+        todo!()
+    }
+
+    // fn unwrap_or_clone(&self, this: Self::PoolRef) -> T {
+    //     refpool::PoolRef::unwrap_or_clone(this)
+    // }
+}
+
 pub struct RefPool<T> {
     inner: refpool::Pool<T>,
 }
@@ -256,7 +274,7 @@ impl<T> PoolLike for RefPool<T> {
 }
 
 impl<T: PoolDefault> PoolLikeDefault for RefPool<T> {
-    fn default_ref(&self) -> Self::PoolRef {
+    fn default_ref(&mut self) -> Self::PoolRef {
         refpool::PoolRef::default(&self.inner)
     }
 }
