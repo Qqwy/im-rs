@@ -39,9 +39,9 @@ pub trait BTreeValue {
     fn cmp_values(&self, other: &Self) -> Ordering;
 }
 
-pub struct Node<A> {
+pub struct Node<A, Pool> {
     keys: Chunk<A, NodeSize>,
-    children: Chunk<Option<PoolRef<Node<A>>>, Add1<NodeSize>>,
+    children: Chunk<Option<PoolRef<Node<A, Pool>>>, Add1<NodeSize>>,
 }
 
 // #[cfg(feature = "pool")]
@@ -51,7 +51,7 @@ unsafe fn cast_uninit<A>(target: &mut A) -> &mut mem::MaybeUninit<A> {
 }
 
 #[allow(unsafe_code)]
-impl<A> PoolDefault for Node<A> {
+impl<A, Pool> PoolDefault for Node<A, Pool> {
     // #[cfg(feature = "pool")]
     unsafe fn default_uninit(target: &mut mem::MaybeUninit<Self>) {
         let ptr: *mut Self = target.as_mut_ptr();
@@ -62,7 +62,7 @@ impl<A> PoolDefault for Node<A> {
 }
 
 #[allow(unsafe_code)]
-impl<A> PoolClone for Node<A>
+impl<A, Pool> PoolClone for Node<A, Pool>
 where
     A: Clone,
 {
@@ -75,23 +75,23 @@ where
     }
 }
 
-pub(crate) enum Insert<A> {
+pub(crate) enum Insert<A, Pool> {
     Added,
     Replaced(A),
-    Split(Node<A>, A, Node<A>),
+    Split(Node<A, Pool>, A, Node<A, Pool>),
 }
 
-enum InsertAction<A> {
+enum InsertAction<A, Pool> {
     AddedAction,
     ReplacedAction(A),
     InsertAt,
-    InsertSplit(Node<A>, A, Node<A>),
+    InsertSplit(Node<A, Pool>, A, Node<A, Pool>),
 }
 
-pub(crate) enum Remove<A> {
+pub(crate) enum Remove<A, Pool> {
     NoChange,
     Removed(A),
-    Update(A, Node<A>),
+    Update(A, Node<A, Pool>),
 }
 
 enum Boundary {
@@ -109,7 +109,7 @@ enum RemoveAction {
     ContinueDown(usize),
 }
 
-impl<A> Clone for Node<A>
+impl<A, Pool> Clone for Node<A, Pool>
 where
     A: Clone,
 {
@@ -121,7 +121,7 @@ where
     }
 }
 
-impl<A> Default for Node<A> {
+impl<A, Pool> Default for Node<A, Pool> {
     fn default() -> Self {
         Node {
             keys: Chunk::new(),
@@ -130,7 +130,7 @@ impl<A> Default for Node<A> {
     }
 }
 
-impl<A> Node<A> {
+impl<A, Pool> Node<A, Pool> {
     #[inline]
     fn has_room(&self) -> bool {
         self.keys.len() < NODE_SIZE
@@ -151,10 +151,10 @@ impl<A> Node<A> {
 
     #[inline]
     pub(crate) fn new_from_split(
-        pool: &RefPool<Node<A>>,
-        left: Node<A>,
+        pool: &Pool,
+        left: Node<A, Pool>,
         median: A,
-        right: Node<A>,
+        right: Node<A, Pool>,
     ) -> Self {
         Node {
             keys: Chunk::unit(median),
@@ -180,7 +180,7 @@ impl<A> Node<A> {
     }
 }
 
-impl<A: BTreeValue> Node<A> {
+impl<A: BTreeValue, Pool> Node<A, Pool> {
     fn child_contains<BK>(&self, index: usize, key: &BK) -> bool
     where
         BK: Ord + ?Sized,
@@ -213,7 +213,7 @@ impl<A: BTreeValue> Node<A> {
         }
     }
 
-    pub(crate) fn lookup_mut<BK>(&mut self, pool: &RefPool<Node<A>>, key: &BK) -> Option<&mut A>
+    pub(crate) fn lookup_mut<BK>(&mut self, pool: &Pool, key: &BK) -> Option<&mut A>
     where
         A: Clone,
         BK: Ord + ?Sized,
@@ -272,11 +272,7 @@ impl<A: BTreeValue> Node<A> {
         }
     }
 
-    pub(crate) fn lookup_prev_mut<'a, BK>(
-        &'a mut self,
-        pool: &RefPool<Node<A>>,
-        key: &BK,
-    ) -> Option<&mut A>
+    pub(crate) fn lookup_prev_mut<'a, BK>(&'a mut self, pool: &Pool, key: &BK) -> Option<&mut A>
     where
         A: Clone,
         BK: Ord + ?Sized,
@@ -300,11 +296,7 @@ impl<A: BTreeValue> Node<A> {
         }
     }
 
-    pub(crate) fn lookup_next_mut<'a, BK>(
-        &'a mut self,
-        pool: &RefPool<Node<A>>,
-        key: &BK,
-    ) -> Option<&mut A>
+    pub(crate) fn lookup_next_mut<'a, BK>(&'a mut self, pool: &Pool, key: &BK) -> Option<&mut A>
     where
         A: Clone,
         BK: Ord + ?Sized,
@@ -329,8 +321,8 @@ impl<A: BTreeValue> Node<A> {
 
     pub(crate) fn path_first<'a, BK>(
         &'a self,
-        mut path: Vec<(&'a Node<A>, usize)>,
-    ) -> Vec<(&'a Node<A>, usize)>
+        mut path: Vec<(&'a Node<A, Pool>, usize)>,
+    ) -> Vec<(&'a Node<A, Pool>, usize)>
     where
         A: 'a,
         BK: Ord + ?Sized,
@@ -353,8 +345,8 @@ impl<A: BTreeValue> Node<A> {
 
     pub(crate) fn path_last<'a, BK>(
         &'a self,
-        mut path: Vec<(&'a Node<A>, usize)>,
-    ) -> Vec<(&'a Node<A>, usize)>
+        mut path: Vec<(&'a Node<A, Pool>, usize)>,
+    ) -> Vec<(&'a Node<A, Pool>, usize)>
     where
         A: 'a,
         BK: Ord + ?Sized,
@@ -379,8 +371,8 @@ impl<A: BTreeValue> Node<A> {
     pub(crate) fn path_next<'a, BK>(
         &'a self,
         key: &BK,
-        mut path: Vec<(&'a Node<A>, usize)>,
-    ) -> Vec<(&'a Node<A>, usize)>
+        mut path: Vec<(&'a Node<A, Pool>, usize)>,
+    ) -> Vec<(&'a Node<A, Pool>, usize)>
     where
         A: 'a,
         BK: Ord + ?Sized,
@@ -423,8 +415,8 @@ impl<A: BTreeValue> Node<A> {
     pub(crate) fn path_prev<'a, BK>(
         &'a self,
         key: &BK,
-        mut path: Vec<(&'a Node<A>, usize)>,
-    ) -> Vec<(&'a Node<A>, usize)>
+        mut path: Vec<(&'a Node<A, Pool>, usize)>,
+    ) -> Vec<(&'a Node<A, Pool>, usize)>
     where
         A: 'a,
         BK: Ord + ?Sized,
@@ -465,11 +457,11 @@ impl<A: BTreeValue> Node<A> {
 
     fn split(
         &mut self,
-        pool: &RefPool<Node<A>>,
+        pool: &Pool,
         value: A,
-        ins_left: Option<Node<A>>,
-        ins_right: Option<Node<A>>,
-    ) -> Insert<A> {
+        ins_left: Option<Node<A, Pool>>,
+        ins_right: Option<Node<A, Pool>>,
+    ) -> Insert<A, Pool> {
         let left_child = ins_left.map(|node| PoolLike::new_ref(pool, node));
         let right_child = ins_right.map(|node| PoolLike::new_ref(pool, node));
         let index = A::search_value(&self.keys, &value).unwrap_err();
@@ -542,7 +534,7 @@ impl<A: BTreeValue> Node<A> {
         )
     }
 
-    fn merge(middle: A, left: Node<A>, mut right: Node<A>) -> Node<A> {
+    fn merge(middle: A, left: Node<A, Pool>, mut right: Node<A, Pool>) -> Node<A, Pool> {
         let mut keys = left.keys;
         keys.push_back(middle);
         keys.append(&mut right.keys);
@@ -551,29 +543,29 @@ impl<A: BTreeValue> Node<A> {
         Node { keys, children }
     }
 
-    fn pop_min(&mut self) -> (A, Option<PoolRef<Node<A>>>) {
+    fn pop_min(&mut self) -> (A, Option<PoolRef<Node<A, Pool>>>) {
         let value = self.keys.pop_front();
         let child = self.children.pop_front();
         (value, child)
     }
 
-    fn pop_max(&mut self) -> (A, Option<PoolRef<Node<A>>>) {
+    fn pop_max(&mut self) -> (A, Option<PoolRef<Node<A, Pool>>>) {
         let value = self.keys.pop_back();
         let child = self.children.pop_back();
         (value, child)
     }
 
-    fn push_min(&mut self, child: Option<PoolRef<Node<A>>>, value: A) {
+    fn push_min(&mut self, child: Option<PoolRef<Node<A, Pool>>>, value: A) {
         self.keys.push_front(value);
         self.children.push_front(child);
     }
 
-    fn push_max(&mut self, child: Option<PoolRef<Node<A>>>, value: A) {
+    fn push_max(&mut self, child: Option<PoolRef<Node<A, Pool>>>, value: A) {
         self.keys.push_back(value);
         self.children.push_back(child);
     }
 
-    pub(crate) fn insert(&mut self, pool: &RefPool<Node<A>>, value: A) -> Insert<A>
+    pub(crate) fn insert(&mut self, pool: &Pool, value: A) -> Insert<A, Pool>
     where
         A: Clone,
     {
@@ -634,7 +626,7 @@ impl<A: BTreeValue> Node<A> {
         self.split(pool, median, left, right)
     }
 
-    pub(crate) fn remove<BK>(&mut self, pool: &RefPool<Node<A>>, key: &BK) -> Remove<A>
+    pub(crate) fn remove<BK>(&mut self, pool: &Pool, key: &BK) -> Remove<A, Pool>
     where
         A: Clone,
         BK: Ord + ?Sized,
@@ -644,11 +636,7 @@ impl<A: BTreeValue> Node<A> {
         self.remove_index(pool, index, Ok(key))
     }
 
-    fn remove_target<BK>(
-        &mut self,
-        pool: &RefPool<Node<A>>,
-        target: Result<&BK, Boundary>,
-    ) -> Remove<A>
+    fn remove_target<BK>(&mut self, pool: &Pool, target: Result<&BK, Boundary>) -> Remove<A, Pool>
     where
         A: Clone,
         BK: Ord + ?Sized,
@@ -664,10 +652,10 @@ impl<A: BTreeValue> Node<A> {
 
     fn remove_index<BK>(
         &mut self,
-        pool: &RefPool<Node<A>>,
+        pool: &Pool,
         index: Result<usize, usize>,
         target: Result<&BK, Boundary>,
-    ) -> Remove<A>
+    ) -> Remove<A, Pool>
     where
         A: Clone,
         BK: Ord + ?Sized,
@@ -936,14 +924,14 @@ impl<A: BTreeValue> Node<A> {
 // Iterator
 
 /// An iterator over an ordered set.
-pub struct Iter<'a, A> {
-    fwd_path: Vec<(&'a Node<A>, usize)>,
-    back_path: Vec<(&'a Node<A>, usize)>,
+pub struct Iter<'a, A, Pool> {
+    fwd_path: Vec<(&'a Node<A, Pool>, usize)>,
+    back_path: Vec<(&'a Node<A, Pool>, usize)>,
     pub(crate) remaining: usize,
 }
 
-impl<'a, A: BTreeValue> Iter<'a, A> {
-    pub(crate) fn new<R, BK>(root: &'a Node<A>, size: usize, range: R) -> Self
+impl<'a, A: BTreeValue, Pool> Iter<'a, A, Pool> {
+    pub(crate) fn new<R, BK>(root: &'a Node<A, Pool>, size: usize, range: R) -> Self
     where
         R: RangeBounds<BK>,
         A::Key: Borrow<BK>,
@@ -982,14 +970,14 @@ impl<'a, A: BTreeValue> Iter<'a, A> {
         }
     }
 
-    fn get(path: &[(&'a Node<A>, usize)]) -> Option<&'a A> {
+    fn get(path: &[(&'a Node<A, Pool>, usize)]) -> Option<&'a A> {
         match path.last() {
             Some((node, index)) => Some(&node.keys[*index]),
             None => None,
         }
     }
 
-    fn step_forward(path: &mut Vec<(&'a Node<A>, usize)>) -> Option<&'a A> {
+    fn step_forward(path: &mut Vec<(&'a Node<A, Pool>, usize)>) -> Option<&'a A> {
         match path.pop() {
             Some((node, index)) => {
                 let index = index + 1;
@@ -1032,7 +1020,7 @@ impl<'a, A: BTreeValue> Iter<'a, A> {
         }
     }
 
-    fn step_back(path: &mut Vec<(&'a Node<A>, usize)>) -> Option<&'a A> {
+    fn step_back(path: &mut Vec<(&'a Node<A, Pool>, usize)>) -> Option<&'a A> {
         match path.pop() {
             Some((node, index)) => match node.children[index] {
                 Some(ref child) => {
@@ -1075,7 +1063,7 @@ impl<'a, A: BTreeValue> Iter<'a, A> {
     }
 }
 
-impl<'a, A: 'a + BTreeValue> Iterator for Iter<'a, A> {
+impl<'a, A: 'a + BTreeValue, Pool> Iterator for Iter<'a, A, Pool> {
     type Item = &'a A;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1099,7 +1087,7 @@ impl<'a, A: 'a + BTreeValue> Iterator for Iter<'a, A> {
     }
 }
 
-impl<'a, A: 'a + BTreeValue> DoubleEndedIterator for Iter<'a, A> {
+impl<'a, A: 'a + BTreeValue, Pool> DoubleEndedIterator for Iter<'a, A, Pool> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match Iter::get(&self.back_path) {
             None => None,
@@ -1118,22 +1106,22 @@ impl<'a, A: 'a + BTreeValue> DoubleEndedIterator for Iter<'a, A> {
 
 // Consuming iterator
 
-enum ConsumingIterItem<A> {
-    Consider(Node<A>),
+enum ConsumingIterItem<A, Pool> {
+    Consider(Node<A, Pool>),
     Yield(A),
 }
 
 /// A consuming iterator over an ordered set.
-pub struct ConsumingIter<A> {
+pub struct ConsumingIter<A, Pool> {
     fwd_last: Option<A>,
-    fwd_stack: Vec<ConsumingIterItem<A>>,
+    fwd_stack: Vec<ConsumingIterItem<A, Pool>>,
     back_last: Option<A>,
-    back_stack: Vec<ConsumingIterItem<A>>,
+    back_stack: Vec<ConsumingIterItem<A, Pool>>,
     remaining: usize,
 }
 
-impl<A: Clone> ConsumingIter<A> {
-    pub(crate) fn new(root: &Node<A>, total: usize) -> Self {
+impl<A: Clone, Pool> ConsumingIter<A, Pool> {
+    pub(crate) fn new(root: &Node<A, Pool>, total: usize) -> Self {
         ConsumingIter {
             fwd_last: None,
             fwd_stack: vec![ConsumingIterItem::Consider(root.clone())],
@@ -1143,13 +1131,16 @@ impl<A: Clone> ConsumingIter<A> {
         }
     }
 
-    fn push_node(stack: &mut Vec<ConsumingIterItem<A>>, maybe_node: Option<PoolRef<Node<A>>>) {
+    fn push_node(
+        stack: &mut Vec<ConsumingIterItem<A, Pool>>,
+        maybe_node: Option<PoolRef<Node<A, Pool>>>,
+    ) {
         if let Some(node) = maybe_node {
             stack.push(ConsumingIterItem::Consider(PoolRef::unwrap_or_clone(node)))
         }
     }
 
-    fn push(stack: &mut Vec<ConsumingIterItem<A>>, mut node: Node<A>) {
+    fn push(stack: &mut Vec<ConsumingIterItem<A, Pool>>, mut node: Node<A, Pool>) {
         for _n in 0..node.keys.len() {
             ConsumingIter::push_node(stack, node.children.pop_back());
             stack.push(ConsumingIterItem::Yield(node.keys.pop_back()));
@@ -1157,18 +1148,18 @@ impl<A: Clone> ConsumingIter<A> {
         ConsumingIter::push_node(stack, node.children.pop_back());
     }
 
-    fn push_fwd(&mut self, node: Node<A>) {
+    fn push_fwd(&mut self, node: Node<A, Pool>) {
         ConsumingIter::push(&mut self.fwd_stack, node)
     }
 
-    fn push_node_back(&mut self, maybe_node: Option<PoolRef<Node<A>>>) {
+    fn push_node_back(&mut self, maybe_node: Option<PoolRef<Node<A, Pool>>>) {
         if let Some(node) = maybe_node {
             self.back_stack
                 .push(ConsumingIterItem::Consider(PoolRef::unwrap_or_clone(node)))
         }
     }
 
-    fn push_back(&mut self, mut node: Node<A>) {
+    fn push_back(&mut self, mut node: Node<A, Pool>) {
         for _i in 0..node.keys.len() {
             self.push_node_back(node.children.pop_front());
             self.back_stack
@@ -1178,7 +1169,7 @@ impl<A: Clone> ConsumingIter<A> {
     }
 }
 
-impl<A> Iterator for ConsumingIter<A>
+impl<A, Pool> Iterator for ConsumingIter<A, Pool>
 where
     A: BTreeValue + Clone,
 {
@@ -1214,7 +1205,7 @@ where
     }
 }
 
-impl<A> DoubleEndedIterator for ConsumingIter<A>
+impl<A, Pool> DoubleEndedIterator for ConsumingIter<A, Pool>
 where
     A: BTreeValue + Clone,
 {
@@ -1244,14 +1235,14 @@ where
     }
 }
 
-impl<A: BTreeValue + Clone> ExactSizeIterator for ConsumingIter<A> {}
+impl<A: BTreeValue + Clone, Pool> ExactSizeIterator for ConsumingIter<A, Pool> {}
 
 // DiffIter
 
 /// An iterator over the differences between two ordered sets.
-pub struct DiffIter<'a, A> {
-    old_stack: Vec<IterItem<'a, A>>,
-    new_stack: Vec<IterItem<'a, A>>,
+pub struct DiffIter<'a, A, Pool> {
+    old_stack: Vec<IterItem<'a, A, Pool>>,
+    new_stack: Vec<IterItem<'a, A, Pool>>,
 }
 
 /// A description of a difference between two ordered sets.
@@ -1270,13 +1261,13 @@ pub enum DiffItem<'a, A> {
     Remove(&'a A),
 }
 
-enum IterItem<'a, A> {
-    Consider(&'a Node<A>),
+enum IterItem<'a, A, Pool> {
+    Consider(&'a Node<A, Pool>),
     Yield(&'a A),
 }
 
-impl<'a, A: 'a> DiffIter<'a, A> {
-    pub(crate) fn new(old: &'a Node<A>, new: &'a Node<A>) -> Self {
+impl<'a, A: 'a, Pool> DiffIter<'a, A, Pool> {
+    pub(crate) fn new(old: &'a Node<A, Pool>, new: &'a Node<A, Pool>) -> Self {
         DiffIter {
             old_stack: if old.keys.is_empty() {
                 Vec::new()
@@ -1291,13 +1282,16 @@ impl<'a, A: 'a> DiffIter<'a, A> {
         }
     }
 
-    fn push_node(stack: &mut Vec<IterItem<'a, A>>, maybe_node: &'a Option<PoolRef<Node<A>>>) {
+    fn push_node(
+        stack: &mut Vec<IterItem<'a, A, Pool>>,
+        maybe_node: &'a Option<PoolRef<Node<A, Pool>>>,
+    ) {
         if let Some(ref node) = *maybe_node {
             stack.push(IterItem::Consider(node))
         }
     }
 
-    fn push(stack: &mut Vec<IterItem<'a, A>>, node: &'a Node<A>) {
+    fn push(stack: &mut Vec<IterItem<'a, A, Pool>>, node: &'a Node<A, Pool>) {
         for n in 0..node.keys.len() {
             let i = node.keys.len() - n;
             Self::push_node(stack, &node.children[i]);
@@ -1307,7 +1301,7 @@ impl<'a, A: 'a> DiffIter<'a, A> {
     }
 }
 
-impl<'a, A> Iterator for DiffIter<'a, A>
+impl<'a, A, Pool> Iterator for DiffIter<'a, A, Pool>
 where
     A: 'a + BTreeValue + PartialEq,
 {
