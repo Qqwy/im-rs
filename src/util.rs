@@ -171,7 +171,8 @@ pub(crate) trait PoolLikeDefault: PoolLike {
 }
 
 use std::collections::HashMap;
-use std::fs;
+use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -184,7 +185,7 @@ pub struct FilePool<T> {
 
 impl<T> FilePool<T> {
     fn new(path: &Path) -> Self {
-        fs::create_dir_all(path).expect("Could not create path for FilePool");
+        std::fs::create_dir_all(path).expect("Could not create path for FilePool");
         Self {
             path: path.into(),
             changes: Default::default(),
@@ -203,7 +204,7 @@ impl<T> PoolLike for FilePool<T> {
     type Value = T;
     type PoolRef = usize;
 
-    fn new(size: usize) -> Self {
+    fn new(_size: usize) -> Self {
         Default::default()
     }
 
@@ -226,9 +227,22 @@ impl<T: Default> PoolLikeDefault for FilePool<T> {
     }
 }
 
-impl<T: PoolClone> PoolLikeClone for FilePool<T> {
+impl<T: PoolClone + serde::de::DeserializeOwned> PoolLikeClone for FilePool<T> {
     fn make_mut<'a>(&mut self, this: &'a mut Self::PoolRef) -> &'a mut T {
-        todo!()
+        let key = this.clone();
+        let filename = key.to_string();
+        let mut filepath: PathBuf = self.path.clone();
+        self.changes.entry(key).or_insert_with(|| {
+            filepath.push(filename);
+            let mut file = File::open(filepath).expect("Failed to open file");
+            let mut contents = Vec::new();
+            file.read_to_end(&mut contents);
+            let val: Arc<T> = postcard::from_bytes::<T>(&contents)
+                .ok()
+                .expect("Deser using Postcard failed")
+                .into();
+            val
+        })
     }
 
     // fn unwrap_or_clone(&self, this: Self::PoolRef) -> T {
