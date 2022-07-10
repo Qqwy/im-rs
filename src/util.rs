@@ -154,18 +154,18 @@ pub trait PoolLike {
     // fn fill(&self);
 
     /// Return the current pool size?
-    fn pool_size(&self) -> usize;
+    // fn pool_size(&self) -> usize;
 
     fn new_ref(&self, value: Self::Value) -> Self::PoolRef;
 
     fn ptr_eq(left: &Self::PoolRef, right: &Self::PoolRef) -> bool;
 }
 
-pub struct Pool<T> {
+pub struct RefPool<T> {
     inner: refpool::Pool<T>,
 }
 
-impl<T> Clone for Pool<T> {
+impl<T> Clone for RefPool<T> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -173,13 +173,13 @@ impl<T> Clone for Pool<T> {
     }
 }
 
-impl<T> Default for Pool<T> {
+impl<T> Default for RefPool<T> {
     fn default() -> Self {
         PoolLike::new(crate::config::POOL_SIZE)
     }
 }
 
-impl<T> PoolLike for Pool<T> {
+impl<T> PoolLike for RefPool<T> {
     type Value = T;
     type PoolRef = refpool::PoolRef<T>;
 
@@ -193,9 +193,9 @@ impl<T> PoolLike for Pool<T> {
     //     // self.inner.fill();
     // }
 
-    fn pool_size(&self) -> usize {
-        self.inner.get_pool_size()
-    }
+    // fn pool_size(&self) -> usize {
+    //     self.inner.get_pool_size()
+    // }
 
     fn new_ref(&self, value: Self::Value) -> Self::PoolRef {
         refpool::PoolRef::new(&self.inner, value)
@@ -215,13 +215,13 @@ pub trait PoolLikeDefault: PoolLike {
     fn default_ref(&self) -> Self::PoolRef;
 }
 
-impl<T: PoolDefault> PoolLikeDefault for Pool<T> {
+impl<T: PoolDefault> PoolLikeDefault for RefPool<T> {
     fn default_ref(&self) -> Self::PoolRef {
         refpool::PoolRef::default(&self.inner)
     }
 }
 
-impl<T: PoolClone> PoolLikeClone for Pool<T> {
+impl<T: PoolClone> PoolLikeClone for RefPool<T> {
     fn make_mut<'a>(&self, this: &'a mut Self::PoolRef) -> &'a mut T {
         refpool::PoolRef::make_mut(&self.inner, this)
     }

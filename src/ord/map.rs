@@ -30,7 +30,7 @@ use std::ops::{Add, Index, IndexMut, RangeBounds};
 use crate::nodes::btree::{BTreeValue, Insert, Node, Remove};
 #[cfg(has_specialisation)]
 use crate::util::linear_search_by;
-use crate::util::{Pool, PoolLike, PoolLikeClone, PoolLikeDefault, PoolRef};
+use crate::util::{PoolLike, PoolLikeClone, PoolLikeDefault, PoolRef, RefPool};
 
 pub use crate::nodes::btree::{
     ConsumingIter, DiffItem as NodeDiffItem, DiffIter as NodeDiffIter, Iter as RangedIter,
@@ -149,7 +149,7 @@ impl<K: Ord + Copy, V> BTreeValue for (K, V) {
 }
 
 // def_pool!(OrdMapPool<K, V>, Node<(K, V)>);
-type OrdMapPool<K, V> = Pool<Node<(K, V)>>;
+type OrdMapPool<K, V> = RefPool<Node<(K, V)>>;
 
 /// An ordered map.
 ///

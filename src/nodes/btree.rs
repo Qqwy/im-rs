@@ -12,7 +12,7 @@ use typenum::{Add1, Unsigned};
 
 use crate::config::OrdChunkSize as NodeSize;
 use crate::util::{
-    Pool, PoolClone, PoolDefault, PoolLike, PoolLikeClone, PoolLikeDefault, PoolRef,
+    PoolClone, PoolDefault, PoolLike, PoolLikeClone, PoolLikeDefault, PoolRef, RefPool,
 };
 
 use self::Insert::*;
@@ -151,7 +151,7 @@ impl<A> Node<A> {
 
     #[inline]
     pub(crate) fn new_from_split(
-        pool: &Pool<Node<A>>,
+        pool: &RefPool<Node<A>>,
         left: Node<A>,
         median: A,
         right: Node<A>,
@@ -213,7 +213,7 @@ impl<A: BTreeValue> Node<A> {
         }
     }
 
-    pub(crate) fn lookup_mut<BK>(&mut self, pool: &Pool<Node<A>>, key: &BK) -> Option<&mut A>
+    pub(crate) fn lookup_mut<BK>(&mut self, pool: &RefPool<Node<A>>, key: &BK) -> Option<&mut A>
     where
         A: Clone,
         BK: Ord + ?Sized,
@@ -274,7 +274,7 @@ impl<A: BTreeValue> Node<A> {
 
     pub(crate) fn lookup_prev_mut<'a, BK>(
         &'a mut self,
-        pool: &Pool<Node<A>>,
+        pool: &RefPool<Node<A>>,
         key: &BK,
     ) -> Option<&mut A>
     where
@@ -302,7 +302,7 @@ impl<A: BTreeValue> Node<A> {
 
     pub(crate) fn lookup_next_mut<'a, BK>(
         &'a mut self,
-        pool: &Pool<Node<A>>,
+        pool: &RefPool<Node<A>>,
         key: &BK,
     ) -> Option<&mut A>
     where
@@ -465,7 +465,7 @@ impl<A: BTreeValue> Node<A> {
 
     fn split(
         &mut self,
-        pool: &Pool<Node<A>>,
+        pool: &RefPool<Node<A>>,
         value: A,
         ins_left: Option<Node<A>>,
         ins_right: Option<Node<A>>,
@@ -573,7 +573,7 @@ impl<A: BTreeValue> Node<A> {
         self.children.push_back(child);
     }
 
-    pub(crate) fn insert(&mut self, pool: &Pool<Node<A>>, value: A) -> Insert<A>
+    pub(crate) fn insert(&mut self, pool: &RefPool<Node<A>>, value: A) -> Insert<A>
     where
         A: Clone,
     {
@@ -634,7 +634,7 @@ impl<A: BTreeValue> Node<A> {
         self.split(pool, median, left, right)
     }
 
-    pub(crate) fn remove<BK>(&mut self, pool: &Pool<Node<A>>, key: &BK) -> Remove<A>
+    pub(crate) fn remove<BK>(&mut self, pool: &RefPool<Node<A>>, key: &BK) -> Remove<A>
     where
         A: Clone,
         BK: Ord + ?Sized,
@@ -646,7 +646,7 @@ impl<A: BTreeValue> Node<A> {
 
     fn remove_target<BK>(
         &mut self,
-        pool: &Pool<Node<A>>,
+        pool: &RefPool<Node<A>>,
         target: Result<&BK, Boundary>,
     ) -> Remove<A>
     where
@@ -664,7 +664,7 @@ impl<A: BTreeValue> Node<A> {
 
     fn remove_index<BK>(
         &mut self,
-        pool: &Pool<Node<A>>,
+        pool: &RefPool<Node<A>>,
         index: Result<usize, usize>,
         target: Result<&BK, Boundary>,
     ) -> Remove<A>
