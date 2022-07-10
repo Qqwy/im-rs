@@ -141,8 +141,8 @@ where
 //     };
 // }
 
-// TODO require Default and Clone impl
-pub trait PoolLike {
+// TODO require Default and Clone impl?
+pub(crate) trait PoolLike {
     type Value;
     type PoolRef;
 
@@ -156,11 +156,68 @@ pub trait PoolLike {
     /// Return the current pool size?
     // fn pool_size(&self) -> usize;
 
-    fn new_ref(&self, value: Self::Value) -> Self::PoolRef;
+    fn new_ref(&mut self, value: Self::Value) -> Self::PoolRef;
 
     fn ptr_eq(left: &Self::PoolRef, right: &Self::PoolRef) -> bool;
 }
 
+pub(crate) trait PoolLikeClone: PoolLike {
+    fn make_mut<'a>(&mut self, this: &'a mut Self::PoolRef) -> &'a mut Self::Value;
+    // fn unwrap_or_clone(&self, this: Self::PoolRef) -> Self::Value; //
+}
+
+pub(crate) trait PoolLikeDefault: PoolLike {
+    fn default_ref(&self) -> Self::PoolRef;
+}
+
+use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
+#[derive(Debug, Clone)]
+pub struct FilePool<T> {
+    path: PathBuf,
+    changes: HashMap<usize, Arc<T>>,
+    next_id: usize,
+}
+
+impl<T> FilePool<T> {
+    fn new(path: &Path) -> Self {
+        fs::create_dir_all(path).expect("Could not create path for FilePool");
+        Self {
+            path: path.into(),
+            changes: Default::default(),
+            next_id: 0, // TODO
+        }
+    }
+}
+
+impl<T> Default for FilePool<T> {
+    fn default() -> Self {
+        FilePool::new(Path::new("/tmp/vorpal/example/"))
+    }
+}
+
+impl<T> PoolLike for FilePool<T> {
+    type Value = T;
+    type PoolRef = usize;
+
+    fn new(size: usize) -> Self {
+        Default::default()
+    }
+
+    fn new_ref(&mut self, value: Self::Value) -> Self::PoolRef {
+        let id = self.next_id;
+        self.next_id += 1;
+        self.changes.insert(self.next_id, Arc::new(value));
+        id
+    }
+
+    fn ptr_eq(left: &Self::PoolRef, right: &Self::PoolRef) -> bool {
+        left == right
+    }
+}
 pub struct RefPool<T> {
     inner: refpool::Pool<T>,
 }
@@ -189,30 +246,13 @@ impl<T> PoolLike for RefPool<T> {
         }
     }
 
-    // fn fill(&self) {
-    //     // self.inner.fill();
-    // }
-
-    // fn pool_size(&self) -> usize {
-    //     self.inner.get_pool_size()
-    // }
-
-    fn new_ref(&self, value: Self::Value) -> Self::PoolRef {
+    fn new_ref(&mut self, value: Self::Value) -> Self::PoolRef {
         refpool::PoolRef::new(&self.inner, value)
     }
 
     fn ptr_eq(left: &Self::PoolRef, right: &Self::PoolRef) -> bool {
         refpool::PoolRef::ptr_eq(left, right)
     }
-}
-
-pub trait PoolLikeClone: PoolLike {
-    fn make_mut<'a>(&self, this: &'a mut Self::PoolRef) -> &'a mut Self::Value;
-    // fn unwrap_or_clone(&self, this: Self::PoolRef) -> Self::Value; //
-}
-
-pub trait PoolLikeDefault: PoolLike {
-    fn default_ref(&self) -> Self::PoolRef;
 }
 
 impl<T: PoolDefault> PoolLikeDefault for RefPool<T> {
@@ -222,7 +262,7 @@ impl<T: PoolDefault> PoolLikeDefault for RefPool<T> {
 }
 
 impl<T: PoolClone> PoolLikeClone for RefPool<T> {
-    fn make_mut<'a>(&self, this: &'a mut Self::PoolRef) -> &'a mut T {
+    fn make_mut<'a>(&mut self, this: &'a mut Self::PoolRef) -> &'a mut T {
         refpool::PoolRef::make_mut(&self.inner, this)
     }
 

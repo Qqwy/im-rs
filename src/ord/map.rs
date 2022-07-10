@@ -213,8 +213,8 @@ impl<K, V> OrdMap<K, V> {
     #[inline]
     #[must_use]
     pub fn unit(key: K, value: V) -> Self {
-        let pool = OrdMapPool::default();
-        let root = PoolLike::new_ref(&pool, Node::unit((key, value)));
+        let mut pool = OrdMapPool::default();
+        let root = PoolLike::new_ref(&mut pool, Node::unit((key, value)));
         OrdMap {
             size: 1,
             pool,
@@ -649,8 +649,8 @@ where
         BK: Ord + ?Sized,
         K: Borrow<BK>,
     {
-        let root = PoolLikeClone::make_mut(&self.pool, &mut self.root);
-        root.lookup_mut(&self.pool, key).map(|(_, v)| v)
+        let root = PoolLikeClone::make_mut(&mut self.pool, &mut self.root);
+        root.lookup_mut(&mut self.pool, key).map(|(_, v)| v)
     }
 
     /// Get the closest smaller entry in a map to a given key
@@ -678,7 +678,7 @@ where
         BK: Ord + ?Sized,
         K: Borrow<BK>,
     {
-        let pool = &self.pool;
+        let pool = &mut self.pool;
         PoolLikeClone::make_mut(pool, &mut self.root)
             .lookup_prev_mut(pool, key)
             .map(|(ref k, ref mut v)| (k, v))
@@ -709,7 +709,7 @@ where
         BK: Ord + ?Sized,
         K: Borrow<BK>,
     {
-        let pool = &self.pool;
+        let pool = &mut self.pool;
         PoolLikeClone::make_mut(pool, &mut self.root)
             .lookup_next_mut(pool, key)
             .map(|(ref k, ref mut v)| (k, v))
@@ -744,17 +744,17 @@ where
     #[inline]
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         let new_root = {
-            let root = PoolLikeClone::make_mut(&self.pool, &mut self.root);
-            match root.insert(&self.pool, (key, value)) {
+            let root = PoolLikeClone::make_mut(&mut self.pool, &mut self.root);
+            match root.insert(&mut self.pool, (key, value)) {
                 Insert::Replaced((_, old_value)) => return Some(old_value),
                 Insert::Added => {
                     self.size += 1;
                     return None;
                 }
-                Insert::Split(left, median, right) => PoolLike::new_ref(
-                    &self.pool,
-                    Node::new_from_split(&self.pool, left, median, right),
-                ),
+                Insert::Split(left, median, right) => {
+                    let node = Node::new_from_split(&mut self.pool, left, median, right);
+                    PoolLike::new_ref(&mut self.pool, node)
+                }
             }
         };
         self.size += 1;
@@ -797,14 +797,14 @@ where
         K: Borrow<BK>,
     {
         let (new_root, removed_value) = {
-            let root = PoolLikeClone::make_mut(&self.pool, &mut self.root);
-            match root.remove(&self.pool, k) {
+            let root = PoolLikeClone::make_mut(&mut self.pool, &mut self.root);
+            match root.remove(&mut self.pool, k) {
                 Remove::NoChange => return None,
                 Remove::Removed(pair) => {
                     self.size -= 1;
                     return Some(pair);
                 }
-                Remove::Update(pair, root) => (PoolLike::new_ref(&self.pool, root), Some(pair)),
+                Remove::Update(pair, root) => (PoolLike::new_ref(&mut self.pool, root), Some(pair)),
             }
         };
         self.size -= 1;
@@ -1827,8 +1827,8 @@ where
     V: Clone,
 {
     fn index_mut(&mut self, key: &BK) -> &mut Self::Output {
-        let root = PoolLikeClone::make_mut(&self.pool, &mut self.root);
-        match root.lookup_mut(&self.pool, key) {
+        let root = PoolLikeClone::make_mut(&mut self.pool, &mut self.root);
+        match root.lookup_mut(&mut self.pool, key) {
             None => panic!("OrdMap::index: invalid key"),
             Some(&mut (_, ref mut value)) => value,
         }
